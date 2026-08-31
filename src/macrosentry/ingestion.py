@@ -6,7 +6,7 @@ from typing import Optional
 from bs4 import BeautifulSoup
 import json
 
-from .types import RawEvent
+from .schemas import RawEvent
 from .config import config
 
 logger = logging.getLogger(__name__)

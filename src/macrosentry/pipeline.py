@@ -9,7 +9,7 @@ from .classification import Classifier
 from .evaluation import Evaluator
 from .storage import StorageManager
 from .observability import StructuredLogger, configure_logging
-from .types import PipelineRun, RawEvent, ClassifiedEvent, EvaluatedEvent
+from .schemas import PipelineRun, RawEvent, ClassifiedEvent, EvaluatedEvent
 
 configure_logging()
 logger = logging.getLogger(__name__)

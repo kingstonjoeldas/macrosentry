@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import random
 
-from .types import ClassifiedEvent, EvaluatedEvent
+from .schemas import ClassifiedEvent, EvaluatedEvent
 from .config import config
 
 logger = logging.getLogger(__name__)

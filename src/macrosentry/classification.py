@@ -1,7 +1,7 @@
 """Phase 3: Classification - Zero-shot, NER, and summarization via Hugging Face."""
 import logging
 from typing import Optional
-from .types import RawEvent, ClassifiedEvent
+from .schemas import RawEvent, ClassifiedEvent
 from .rag import RAGPipeline
 from .config import config
 

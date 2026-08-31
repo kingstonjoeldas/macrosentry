@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 import json
 
-from .types import EvaluatedEvent, PipelineRun
+from .schemas import EvaluatedEvent, PipelineRun
 from .config import config
 
 logger = logging.getLogger(__name__)

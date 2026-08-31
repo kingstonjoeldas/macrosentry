@@ -8,3 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Environment variables (keep API keys private)
+.env
+.env.local
+
+# Logs
+data/logs/
+*.log
+
+# Cache
+.streamlit/
+.pytest_cache/

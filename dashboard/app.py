@@ -164,10 +164,7 @@ def main():
 
         col_a, col_b = st.columns([2, 1])
         with col_a:
-            st.bar_chart(
-                bias_df.set_index("Sentiment")["Count"],
-                color=bias_df.set_index("Sentiment")["Color"].to_list()
-            )
+            st.bar_chart(bias_df.set_index("Sentiment")["Count"])
         with col_b:
             st.metric("Total Events", bias_data["hawkish"] + bias_data["dovish"] + bias_data["neutral"])
 

@@ -18,12 +18,12 @@ Complete steps to deploy MacroSentry to production with automated scheduling.
    - Set main file: `dashboard/app.py`
    - Click "Deploy"
 
-3. **Add Secrets** (in Streamlit Cloud app settings):
+3. **Add Secrets** (in Streamlit Cloud app settings from your `.env` file):
    ```
-   HUGGINGFACE_API_KEY = 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
-   SUPABASE_URL = https://ptrqrqximpnyevizhdvl.supabase.co
-   SUPABASE_KEY = sb_publishable_Oa6teVvQy2bowKTXO0Q-uw_lvJKM5Mh
-   ALPHA_VANTAGE_API_KEY = LZRY7097LV5JLFK5
+   HUGGINGFACE_API_KEY = <your-key>
+   SUPABASE_URL = <your-url>
+   SUPABASE_KEY = <your-key>
+   ALPHA_VANTAGE_API_KEY = <your-key>
    ```
 
 4. **Done!** Your dashboard is now live at a public URL.

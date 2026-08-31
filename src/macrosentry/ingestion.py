@@ -8,6 +8,7 @@ import json
 
 from .schemas import RawEvent
 from .config import config
+from .twitter_client import TwitterClient
 
 logger = logging.getLogger(__name__)
 
@@ -120,16 +121,62 @@ class EconomicCalendarFetcher:
 
 
 class NewsAggregator:
-    """Fetch market-relevant news (simplified mock)."""
+    """Fetch real market-relevant news from NewsAPI."""
+
+    def __init__(self):
+        self.api_key = config.NEWSAPI_KEY
+        self.base_url = "https://newsapi.org/v2/everything"
+        self.session = requests.Session()
 
     def fetch_news(self, keywords: list[str] = None) -> list[RawEvent]:
-        """Fetch recent market news."""
+        """Fetch recent market news from NewsAPI."""
         if keywords is None:
-            keywords = ["Fed", "Federal Reserve", "interest rates", "gold", "inflation"]
+            keywords = ["Fed", "Federal Reserve", "interest rates", "gold", "inflation", "market"]
+
+        if not self.api_key:
+            logger.warning("NewsAPI key not configured, using mock data")
+            return self._mock_news()
 
         events = []
 
-        # Mock news (in production: use NewsAPI free tier)
+        for keyword in keywords[:3]:  # Limit to 3 queries to stay within free tier
+            try:
+                params = {
+                    "q": keyword,
+                    "sortBy": "publishedAt",
+                    "language": "en",
+                    "pageSize": 5,
+                    "apiKey": self.api_key
+                }
+
+                resp = self.session.get(self.base_url, params=params, timeout=10)
+                resp.raise_for_status()
+                data = resp.json()
+
+                if data.get("articles"):
+                    for article in data.get("articles", [])[:5]:
+                        event = RawEvent(
+                            id=f"news_{len(events)}",
+                            source="newsapi",
+                            headline=article.get("title", "")[:200],
+                            body=article.get("description", "")[:500],
+                            published_at=datetime.fromisoformat(
+                                article.get("publishedAt", "").replace("Z", "+00:00")
+                            ) if article.get("publishedAt") else datetime.now(),
+                            url=article.get("url", ""),
+                            tickers=[]
+                        )
+                        events.append(event)
+                        logger.info(f"Fetched news: {article.get('title', '')[:80]}...")
+
+            except Exception as e:
+                logger.warning(f"Error fetching news for '{keyword}': {e}")
+
+        logger.info(f"Fetched {len(events)} news items from NewsAPI")
+        return events[:20]  # Return top 20 articles
+
+    def _mock_news(self) -> list[RawEvent]:
+        """Fallback to mock news if API unavailable."""
         mock_news = [
             "Fed signals cautious approach to rate cuts",
             "Gold surges as inflation concerns rise",
@@ -137,10 +184,11 @@ class NewsAggregator:
             "Market awaits Powell speech on policy outlook",
         ]
 
+        events = []
         for i, headline in enumerate(mock_news):
             events.append(RawEvent(
                 id=f"news_{i}",
-                source="news",
+                source="news_mock",
                 headline=headline,
                 body=headline,
                 published_at=datetime.now(),
@@ -148,7 +196,6 @@ class NewsAggregator:
                 tickers=[]
             ))
 
-        logger.info(f"Fetched {len(events)} news items")
         return events
 
 
@@ -159,16 +206,38 @@ class Ingester:
         self.fed_fetcher = FedStatementFetcher()
         self.calendar_fetcher = EconomicCalendarFetcher()
         self.news_fetcher = NewsAggregator()
+        self.twitter_client = TwitterClient()
 
     def ingest_all(self) -> list[RawEvent]:
-        """Fetch all event sources."""
+        """Fetch all event sources (news, Fed, calendar, Twitter)."""
         events = []
         events.extend(self.fed_fetcher.fetch_recent_statements())
         events.extend(self.fed_fetcher.fetch_speeches())
         events.extend(self.calendar_fetcher.fetch_calendar())
         events.extend(self.news_fetcher.fetch_news())
+        events.extend(self._ingest_twitter())
 
         logger.info(f"Total events ingested: {len(events)}")
+        return events
+
+    def _ingest_twitter(self) -> list[RawEvent]:
+        """Convert Twitter data to RawEvent format."""
+        events = []
+        tweets = self.twitter_client.get_recent_tweets(hours=1)
+
+        for tweet in tweets:
+            event = RawEvent(
+                id=tweet["id"],
+                source=f"twitter_{tweet['author']}",
+                headline=tweet["text"][:200],
+                body=tweet["text"],
+                published_at=datetime.fromisoformat(tweet["created_at"].replace("Z", "+00:00")),
+                url=tweet["url"],
+                tickers=[]
+            )
+            events.append(event)
+
+        logger.info(f"Fetched {len(events)} tweets")
         return events
 
 

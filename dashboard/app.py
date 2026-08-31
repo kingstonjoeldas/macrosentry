@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import sys
+import time
 from pathlib import Path
 
 # Add src to path
@@ -240,16 +241,40 @@ def format_event_card(event: dict) -> str:
 
 
 def main():
-    """Main dashboard app."""
+    """Main dashboard app with auto-refresh."""
     storage = get_storage_manager()
 
-    # Premium header
-    st.markdown("""
-    <div class="header-container">
-        <h1 class="header-title">📊 MacroSentry</h1>
-        <p class="header-subtitle">Autonomous Fed & Market Surveillance with Real-Time Bias Analysis</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Premium header with live status
+    col_header_main, col_status = st.columns([5, 1])
+    with col_header_main:
+        st.markdown("""
+        <div class="header-container">
+            <h1 class="header-title">📊 MacroSentry</h1>
+            <p class="header-subtitle">Autonomous Fed & Market Surveillance with Real-Time Bias Analysis</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_status:
+        st.markdown("""
+        <div style="text-align: center; margin-top: 20px;">
+            <div style="color: #58a6ff; font-size: 12px;">🟢 LIVE</div>
+            <div style="color: #8b949e; font-size: 10px;">Updates every 30s</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Auto-refresh every 30 seconds
+    st.session_state.refresh_counter = st.session_state.get("refresh_counter", 0) + 1
+    import streamlit.components.v1 as components
+    components.html(
+        f"""
+        <script>
+        setTimeout(function() {{
+            window.location.reload();
+        }}, 30000);
+        </script>
+        """,
+        height=0
+    )
 
     # Get data
     dashboard_data = storage.get_dashboard_data()

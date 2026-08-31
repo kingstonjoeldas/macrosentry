@@ -9,6 +9,9 @@ class Config:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
     ALPHA_VANTAGE_API_KEY: str = os.getenv("ALPHA_VANTAGE_API_KEY", "")
+    NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY", "")
+    TWITTER_BEARER_TOKEN: str = os.getenv("TWITTER_BEARER_TOKEN", "")
+    TWITTER_ACCOUNTS: str = os.getenv("TWITTER_ACCOUNTS", "@mrkt_ai,@fed_watchers,@cmegroup")
 
     # Hugging Face models (free tier, no auth required)
     ZS_MODEL = "facebook/bart-large-mnli"  # Zero-shot classification

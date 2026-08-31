@@ -18,31 +18,176 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Dark theme with custom CSS
+# Premium dark theme with custom CSS
 st.markdown("""
 <style>
     [data-testid="stAppViewContainer"] {
-        background-color: #0e1117;
+        background: linear-gradient(135deg, #0a0e27 0%, #0f1535 100%);
     }
+
+    [data-testid="stSidebar"] { display: none; }
+
+    /* Header */
+    .header-container {
+        text-align: center;
+        padding: 40px 0 30px 0;
+        background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+        border-bottom: 2px solid #00d4ff;
+        margin: -1rem -1rem 2rem -1rem;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .header-title {
+        font-size: 48px;
+        font-weight: 800;
+        background: linear-gradient(90deg, #00d4ff, #0099ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+    }
+
+    .header-subtitle {
+        color: #8b949e;
+        font-size: 16px;
+        margin-top: 8px;
+    }
+
+    /* Metric cards */
     .metric-card {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 6px;
-        padding: 16px;
+        background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+        border: 1px solid #00d4ff;
+        border-radius: 12px;
+        padding: 24px;
         margin-bottom: 16px;
+        box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
     }
-    .bias-hawkish { color: #f85149; }
-    .bias-dovish { color: #58a6ff; }
-    .bias-neutral { color: #8b949e; }
-    .impact-high { color: #f85149; font-weight: bold; }
-    .impact-medium { color: #ffa657; }
-    .impact-low { color: #79c0ff; }
-    .event-row {
-        background-color: #0d1117;
-        border-left: 3px solid #30363d;
-        padding: 12px;
+
+    .metric-label {
+        color: #8b949e;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .metric-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: #00d4ff;
+        margin-top: 8px;
+    }
+
+    /* News cards */
+    .news-card {
+        background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 212, 255, 0.05);
+    }
+
+    .news-card:hover {
+        border-color: #00d4ff;
+        box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+    }
+
+    .news-headline {
+        font-size: 18px;
+        font-weight: 700;
+        color: #e6edf3;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+
+    .news-source {
+        color: #8b949e;
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    .news-summary {
+        color: #c9d1d9;
+        font-size: 14px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    /* Impact badge */
+    .impact-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 8px;
         margin-bottom: 8px;
+    }
+
+    .impact-high {
+        background-color: rgba(248, 81, 73, 0.2);
+        color: #f85149;
+        border: 1px solid #f85149;
+    }
+
+    .impact-medium {
+        background-color: rgba(255, 166, 87, 0.2);
+        color: #ffa657;
+        border: 1px solid #ffa657;
+    }
+
+    .impact-low {
+        background-color: rgba(121, 192, 255, 0.2);
+        color: #79c0ff;
+        border: 1px solid #79c0ff;
+    }
+
+    /* Bias badges */
+    .bias-badge {
+        display: inline-block;
+        padding: 4px 10px;
         border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 6px;
+    }
+
+    .bias-hawkish {
+        background-color: rgba(248, 81, 73, 0.15);
+        color: #f85149;
+    }
+
+    .bias-dovish {
+        background-color: rgba(88, 166, 255, 0.15);
+        color: #58a6ff;
+    }
+
+    .bias-neutral {
+        background-color: rgba(139, 148, 158, 0.15);
+        color: #8b949e;
+    }
+
+    .news-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #30363d;
+        font-size: 12px;
+        color: #8b949e;
+    }
+
+    .section-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #e6edf3;
+        margin-top: 40px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #00d4ff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -54,34 +199,41 @@ def get_storage_manager():
     return StorageManager()
 
 
-def format_event_row(event: dict) -> str:
-    """Format event for display."""
-    bias_class = f"bias-{event.get('bias', 'neutral')}"
-    impact_class = f"impact-{event.get('impact', 'low')}"
+def format_event_card(event: dict) -> str:
+    """Format event as a clean news card."""
+    bias = event.get('bias', 'neutral').lower()
+    impact = event.get('impact', 'low').lower()
+
+    # Impact badge styling
+    impact_badge = f'<span class="impact-badge impact-{impact}">🎯 {impact.upper()}</span>'
+
+    # Bias indicator
+    bias_emoji = {'hawkish': '🔴', 'dovish': '🔵', 'neutral': '⚪'}.get(bias, '⚪')
+    bias_badge = f'<span class="bias-badge bias-{bias}">{bias_emoji} {bias.title()}</span>'
+
+    # Prediction accuracy
+    if event.get('prediction_correct') is True:
+        accuracy_text = '<span style="color: #58a6ff;">✓ Prediction Correct</span>'
+    elif event.get('prediction_correct') is False:
+        accuracy_text = '<span style="color: #f85149;">✗ Prediction Missed</span>'
+    else:
+        accuracy_text = '<span style="color: #8b949e;">⏳ Pending</span>'
+
+    source = event.get('source', 'Unknown').replace('_', ' ').title()
+    date = event.get('published_at', 'N/A')[:10]
 
     return f"""
-    <div class="event-row">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <div style="flex: 1;">
-                <strong>{event.get('headline', 'Untitled')}</strong>
-            </div>
-            <div style="margin-left: 8px;">
-                <span class="{bias_class}">●</span> {event.get('bias', 'N/A')}
-            </div>
+    <div class="news-card">
+        <div class="news-headline">{event.get('headline', 'Untitled')}</div>
+        <div class="news-source">📰 {source} · {date}</div>
+        <div class="news-summary">{event.get('summary', event.get('headline', '')[:200])}</div>
+        <div style="margin-bottom: 12px;">
+            {impact_badge}
+            {bias_badge}
         </div>
-        <div style="font-size: 0.85em; color: #8b949e; margin-bottom: 6px;">
-            {event.get('source', 'unknown').replace('_', ' ').title()}
-            · {event.get('published_at', 'N/A')[:10]}
-        </div>
-        <div style="font-size: 0.9em; color: #c9d1d9; margin-bottom: 6px;">
-            {event.get('summary', event.get('headline', '')[:150])}...
-        </div>
-        <div style="display: flex; gap: 12px; font-size: 0.85em;">
-            <span class="{impact_class}">Impact: {event.get('impact', 'N/A').upper()}</span>
-            <span style="color: #8b949e;">
-                Pred: {event.get('price_direction', 'N/A')}
-                · Actual: {'✓' if event.get('prediction_correct') else '✗' if event.get('prediction_correct') is False else '?'}
-            </span>
+        <div class="news-meta">
+            <span>Direction: {event.get('price_direction', 'N/A')}</span>
+            <span>{accuracy_text}</span>
         </div>
     </div>
     """
@@ -91,172 +243,106 @@ def main():
     """Main dashboard app."""
     storage = get_storage_manager()
 
-    # Header
-    st.markdown("# 📊 MacroSentry")
-    st.markdown("**Autonomous Fed & Market Surveillance · Self-Evaluating Predictions**")
-    st.markdown("---")
+    # Premium header
+    st.markdown("""
+    <div class="header-container">
+        <h1 class="header-title">📊 MacroSentry</h1>
+        <p class="header-subtitle">Autonomous Fed & Market Surveillance with Real-Time Bias Analysis</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Tabs
-    tab_dashboard, tab_events, tab_runs, tab_settings = st.tabs(
-        ["Dashboard", "Event Feed", "Pipeline Runs", "Settings"]
-    )
+    # Get data
+    dashboard_data = storage.get_dashboard_data()
 
-    with tab_dashboard:
-        # Get data
-        dashboard_data = storage.get_dashboard_data()
+    # Top metrics row
+    col1, col2, col3, col4 = st.columns(4)
 
-        # Metrics row 1: Bias and accuracy
-        col1, col2, col3 = st.columns(3)
+    with col1:
+        bias = dashboard_data["bias_summary"]["bias"].upper()
+        bias_emoji = {'HAWKISH': '🔴', 'DOVISH': '🔵', 'NEUTRAL': '⚪'}.get(bias, '❓')
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Market Bias</div>
+            <div class="metric-value" style="color: #00d4ff;">{bias_emoji} {bias}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with col1:
-            bias = dashboard_data["bias_summary"]["bias"].upper()
-            bias_color = {
-                "HAWKISH": "🔴",
-                "DOVISH": "🔵",
-                "NEUTRAL": "⚪"
-            }.get(bias, "❓")
+    with col2:
+        accuracy = dashboard_data["accuracy"]["accuracy"]
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Accuracy</div>
+            <div class="metric-value">{accuracy:.1%}</div>
+            <div style="font-size: 12px; color: #8b949e; margin-top: 4px;">{dashboard_data['accuracy']['total_runs']} runs</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class="metric-card">
-                <div style="color: #8b949e; font-size: 0.9em;">TODAY'S BIAS</div>
-                <div style="font-size: 2em; font-weight: bold; margin-top: 8px;">
-                    {bias_color} {bias}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    with col3:
+        events = dashboard_data["accuracy"]["events_processed"]
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Events Tracked</div>
+            <div class="metric-value">{events}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with col2:
-            accuracy = dashboard_data["accuracy"]["accuracy"]
-            st.markdown(f"""
-            <div class="metric-card">
-                <div style="color: #8b949e; font-size: 0.9em;">SELF-EVAL ACCURACY</div>
-                <div style="font-size: 2em; font-weight: bold; margin-top: 8px;">
-                    {accuracy:.1%}
-                </div>
-                <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">
-                    {dashboard_data['accuracy']['total_runs']} runs
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col3:
-            events_processed = dashboard_data["accuracy"]["events_processed"]
-            st.markdown(f"""
-            <div class="metric-card">
-                <div style="color: #8b949e; font-size: 0.9em;">EVENTS TRACKED</div>
-                <div style="font-size: 2em; font-weight: bold; margin-top: 8px;">
-                    {events_processed}
-                </div>
-                <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">
-                    all-time
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Bias breakdown
-        st.markdown("### Bias Distribution")
+    with col4:
         bias_data = dashboard_data["bias_summary"]
-        bias_df = pd.DataFrame({
-            "Sentiment": ["Hawkish", "Dovish", "Neutral"],
-            "Count": [bias_data["hawkish"], bias_data["dovish"], bias_data["neutral"]],
-            "Color": ["#f85149", "#58a6ff", "#8b949e"]
-        })
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Today's Events</div>
+            <div class="metric-value">{bias_data['hawkish'] + bias_data['dovish'] + bias_data['neutral']}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        col_a, col_b = st.columns([2, 1])
-        with col_a:
-            st.bar_chart(bias_df.set_index("Sentiment")["Count"])
-        with col_b:
-            st.metric("Total Events", bias_data["hawkish"] + bias_data["dovish"] + bias_data["neutral"])
+    # News feed - main focus
+    st.markdown('<div class="section-title">📰 Market Events & News Feed</div>', unsafe_allow_html=True)
 
-        st.markdown("---")
-
-        # Latest events preview
-        st.markdown("### Latest Events")
-        recent = dashboard_data["recent_events"][:5]
+    recent = dashboard_data["recent_events"]
+    if recent:
         for event in recent:
-            st.markdown(format_event_row(event), unsafe_allow_html=True)
+            st.markdown(format_event_card(event), unsafe_allow_html=True)
+    else:
+        st.info("No events yet. Run the pipeline to generate events.")
 
-    with tab_events:
-        st.markdown("### Full Event Feed")
-        recent = dashboard_data["recent_events"]
-        if recent:
-            for event in recent:
-                st.markdown(format_event_row(event), unsafe_allow_html=True)
-        else:
-            st.info("No events yet. Run the pipeline to generate events.")
+    # Bias distribution chart
+    st.markdown('<div class="section-title">📊 Sentiment Distribution</div>', unsafe_allow_html=True)
 
-    with tab_runs:
-        st.markdown("### Pipeline Run History")
+    bias_data = dashboard_data["bias_summary"]
+    bias_df = pd.DataFrame({
+        "Sentiment": ["🔴 Hawkish", "🔵 Dovish", "⚪ Neutral"],
+        "Count": [bias_data["hawkish"], bias_data["dovish"], bias_data["neutral"]],
+    })
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total Runs", dashboard_data["accuracy"]["total_runs"])
-        with col2:
-            st.metric("Overall Accuracy", f"{dashboard_data['accuracy']['accuracy']:.1%}")
+    col_chart, col_stats = st.columns([3, 1])
+    with col_chart:
+        st.bar_chart(bias_df.set_index("Sentiment")["Count"])
+    with col_stats:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%); border: 1px solid #00d4ff; border-radius: 8px; padding: 16px;">
+            <div style="color: #8b949e; font-size: 11px;">BREAKDOWN</div>
+            <div style="color: #f85149; font-size: 14px; margin-top: 8px;">🔴 {bias_data['hawkish']} Hawkish</div>
+            <div style="color: #58a6ff; font-size: 14px;">🔵 {bias_data['dovish']} Dovish</div>
+            <div style="color: #8b949e; font-size: 14px;">⚪ {bias_data['neutral']} Neutral</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        if st.button("Run Pipeline Now"):
-            with st.spinner("Running MacroSentry pipeline..."):
+    # Admin section
+    st.markdown("---")
+    st.markdown('<div style="font-size: 12px; color: #8b949e; text-align: center;">⚙️ Pipeline Controls</div>', unsafe_allow_html=True)
+
+    col_admin1, col_admin2 = st.columns(2)
+    with col_admin1:
+        if st.button("▶️ Run Pipeline Now", use_container_width=True):
+            with st.spinner("Processing events..."):
                 pipeline = MacroSentryPipeline()
                 result = pipeline.run()
-
-                st.success(f"Pipeline completed!")
-                st.json({
-                    "run_id": result["run_id"],
-                    "events_processed": result["events_processed"],
-                    "accuracy": f"{result['accuracy']:.1%}",
-                    "errors": len(result["errors"])
-                })
-
-                # Refresh dashboard
+                st.success(f"✅ Processed {result['events_processed']} events")
                 st.rerun()
 
-    with tab_settings:
-        st.markdown("### Configuration")
-
-        st.markdown("#### API Keys")
-        st.warning(
-            "Note: Set environment variables instead of entering here:\n"
-            "- `HUGGINGFACE_API_KEY`\n"
-            "- `SUPABASE_URL`\n"
-            "- `SUPABASE_KEY`\n"
-            "- `ALPHA_VANTAGE_API_KEY`"
-        )
-
-        st.markdown("#### Futures Monitored")
-        tickers = {
-            "Gold (XAUUSD)": "XAUUSD",
-            "Silver (XAGUSD)": "XAGUSD",
-            "10-Year Notes (ZN)": "ZN",
-            "Corn (ZC)": "ZC",
-            "Soybeans (ZS)": "ZS",
-            "S&P 500 (ES)": "ES",
-        }
-        for label, _ in tickers.items():
-            st.checkbox(label, value=True, disabled=True)
-
-        st.markdown("#### Evaluation Window")
-        st.slider("Minutes after event to check price", 1, 60, 30, disabled=True)
-
-        st.markdown("#### About")
-        st.markdown("""
-        **MacroSentry** is an autonomous pipeline that:
-        1. Monitors Federal Reserve statements, speeches, and economic calendar
-        2. Classifies each event (hawkish/dovish/neutral, low/medium/high impact)
-        3. Grounds classifications using RAG and historical FOMC context
-        4. Self-evaluates: checks price movements 30 minutes after each event
-        5. Publishes results and accuracy scores to this dashboard
-
-        **Stack:**
-        - Ingestion: Fed.gov, economic calendars, market news
-        - RAG: Sentence-Transformers + historical FOMC statements
-        - Classification: Hugging Face Inference API (zero-shot)
-        - Orchestration: LangGraph
-        - Storage: Supabase
-        - Scheduling: GitHub Actions
-        - Dashboard: Streamlit
-
-        **Cost:** $0 (free tier APIs only)
-        """)
+    with col_admin2:
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.rerun()
 
 
 if __name__ == "__main__":

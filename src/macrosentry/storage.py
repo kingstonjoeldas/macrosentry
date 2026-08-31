@@ -10,22 +10,28 @@ from .config import config
 logger = logging.getLogger(__name__)
 
 class SupabaseClient:
-    """Supabase database client (mock for now, real implementation uses supabase library)."""
+    """Supabase database client."""
 
     def __init__(self, url: str = "", key: str = ""):
         self.url = url or config.SUPABASE_URL
         self.key = key or config.SUPABASE_KEY
+        self.use_mock = not (self.url and self.key)
 
-        # In production: use real supabase client
-        # from supabase import create_client
-        # self.client = create_client(url, key)
+        if not self.use_mock:
+            try:
+                from supabase import create_client
+                self.client = create_client(self.url, self.key)
+                logger.info("Initialized real Supabase client")
+            except Exception as e:
+                logger.warning(f"Failed to connect to Supabase: {e}, using mock mode")
+                self.use_mock = True
 
-        # For demo: in-memory storage
-        self.events = []
-        self.runs = []
-        self.accuracy_history = []
-
-        logger.info("Initialized Supabase client (mock mode)")
+        if self.use_mock:
+            # Fallback: in-memory storage
+            self.events = []
+            self.runs = []
+            self.accuracy_history = []
+            logger.info("Using mock in-memory storage")
 
     def create_tables(self):
         """
@@ -96,7 +102,16 @@ class SupabaseClient:
                 "prediction_correct": evaluated_event.prediction_correct,
                 "evaluated_at": evaluated_event.evaluated_at.isoformat(),
             }
-            self.events.append(event_record)
+
+            if not self.use_mock:
+                try:
+                    self.client.table("events").insert(event_record).execute()
+                except Exception as e:
+                    logger.error(f"Supabase insert failed: {e}, falling back to mock")
+                    self.events.append(event_record)
+            else:
+                self.events.append(event_record)
+
             logger.info(f"Inserted event: {evaluated_event.classified.event.headline[:50]}...")
             return True
 
@@ -115,7 +130,16 @@ class SupabaseClient:
                 "errors": json.dumps(run.errors),
                 "accuracy": run.accuracy,
             }
-            self.runs.append(run_record)
+
+            if not self.use_mock:
+                try:
+                    self.client.table("pipeline_runs").insert(run_record).execute()
+                except Exception as e:
+                    logger.error(f"Supabase insert failed: {e}, falling back to mock")
+                    self.runs.append(run_record)
+            else:
+                self.runs.append(run_record)
+
             logger.info(f"Inserted run: {run.run_id}")
             return True
 
@@ -125,13 +149,20 @@ class SupabaseClient:
 
     def get_recent_events(self, limit: int = 50) -> List[dict]:
         """Get recent classified events for dashboard."""
-        # Sort by published_at desc, return top N
-        sorted_events = sorted(
-            self.events,
-            key=lambda x: x["published_at"],
-            reverse=True
-        )
-        return sorted_events[:limit]
+        try:
+            if not self.use_mock:
+                response = self.client.table("events").select("*").order("published_at", desc=True).limit(limit).execute()
+                return response.data if response.data else []
+            else:
+                sorted_events = sorted(
+                    self.events,
+                    key=lambda x: x["published_at"],
+                    reverse=True
+                )
+                return sorted_events[:limit]
+        except Exception as e:
+            logger.error(f"Error fetching recent events: {e}")
+            return []
 
     def get_accuracy_stats(self) -> dict:
         """Get accuracy statistics."""

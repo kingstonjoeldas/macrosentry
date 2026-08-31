@@ -17,6 +17,11 @@ class SupabaseClient:
         self.key = key or config.SUPABASE_KEY
         self.use_mock = not (self.url and self.key)
 
+        # Always initialize in-memory as fallback
+        self.events = []
+        self.runs = []
+        self.accuracy_history = []
+
         if not self.use_mock:
             try:
                 from supabase import create_client
@@ -27,10 +32,6 @@ class SupabaseClient:
                 self.use_mock = True
 
         if self.use_mock:
-            # Fallback: in-memory storage
-            self.events = []
-            self.runs = []
-            self.accuracy_history = []
             logger.info("Using mock in-memory storage")
 
     def create_tables(self):
@@ -166,23 +167,47 @@ class SupabaseClient:
 
     def get_accuracy_stats(self) -> dict:
         """Get accuracy statistics."""
-        if not self.runs:
+        runs = []
+
+        if not self.use_mock:
+            try:
+                response = self.client.table("pipeline_runs").select("*").execute()
+                runs = response.data if response.data else []
+            except Exception as e:
+                logger.warning(f"Failed to fetch runs from Supabase: {e}, using fallback")
+                runs = self.runs
+        else:
+            runs = self.runs
+
+        if not runs:
             return {"accuracy": 0.0, "total_runs": 0, "events_processed": 0}
 
-        accuracies = [r["accuracy"] for r in self.runs if r["accuracy"] is not None]
-        total_events = sum(r["events_processed"] for r in self.runs)
+        accuracies = [r["accuracy"] for r in runs if r.get("accuracy") is not None]
+        total_events = sum(r.get("events_processed", 0) for r in runs)
 
         return {
             "accuracy": sum(accuracies) / len(accuracies) if accuracies else 0.0,
-            "total_runs": len(self.runs),
+            "total_runs": len(runs),
             "events_processed": total_events,
         }
 
     def get_bias_summary(self, hours: int = 24) -> dict:
         """Get bias summary for dashboard (hawkish/dovish/neutral count)."""
-        hawkish = sum(1 for e in self.events if e["bias"] == "hawkish")
-        dovish = sum(1 for e in self.events if e["bias"] == "dovish")
-        neutral = sum(1 for e in self.events if e["bias"] == "neutral")
+        events = []
+
+        if not self.use_mock:
+            try:
+                response = self.client.table("events").select("*").execute()
+                events = response.data if response.data else []
+            except Exception as e:
+                logger.warning(f"Failed to fetch events from Supabase: {e}, using fallback")
+                events = self.events
+        else:
+            events = self.events
+
+        hawkish = sum(1 for e in events if e.get("bias") == "hawkish")
+        dovish = sum(1 for e in events if e.get("bias") == "dovish")
+        neutral = sum(1 for e in events if e.get("bias") == "neutral")
 
         total = hawkish + dovish + neutral
         if total == 0:

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from bs4 import BeautifulSoup
 import json
+import uuid
 
 from .schemas import RawEvent
 from .config import config
@@ -41,7 +42,7 @@ class FedStatementFetcher:
                 if any(x in text.lower() for x in ["fomc", "minutes", "statement"]):
                     # Create event entry
                     event = RawEvent(
-                        id=f"fed_{len(events)}",
+                        id=str(uuid.uuid4()),  # Generate proper UUID
                         source="fed_statement",
                         headline=text[:100],
                         body="",  # Would fetch full text in production
@@ -72,7 +73,7 @@ class FedStatementFetcher:
                 link = item.find("a")
                 if link:
                     event = RawEvent(
-                        id=f"speech_{len(events)}",
+                        id=str(uuid.uuid4()),  # Generate proper UUID
                         source="fed_speech",
                         headline=link.get_text(strip=True)[:100],
                         body="",
@@ -107,7 +108,7 @@ class EconomicCalendarFetcher:
 
         for headline, body, impact in mock_events:
             events.append(RawEvent(
-                id=f"econ_{len(events)}",
+                id=str(uuid.uuid4()),  # Generate proper UUID
                 source="econ_calendar",
                 headline=headline,
                 body=body,
@@ -156,7 +157,7 @@ class NewsAggregator:
                 if data.get("articles"):
                     for article in data.get("articles", [])[:5]:
                         event = RawEvent(
-                            id=f"news_{len(events)}",
+                            id=str(uuid.uuid4()),  # Generate proper UUID
                             source="newsapi",
                             headline=article.get("title", "")[:200],
                             body=article.get("description", "")[:500],
@@ -185,9 +186,9 @@ class NewsAggregator:
         ]
 
         events = []
-        for i, headline in enumerate(mock_news):
+        for headline in mock_news:
             events.append(RawEvent(
-                id=f"news_{i}",
+                id=str(uuid.uuid4()),  # Generate proper UUID
                 source="news_mock",
                 headline=headline,
                 body=headline,
@@ -227,7 +228,7 @@ class Ingester:
 
         for tweet in tweets:
             event = RawEvent(
-                id=tweet["id"],
+                id=str(uuid.uuid4()),  # Generate proper UUID
                 source=f"twitter_{tweet['author']}",
                 headline=tweet["text"][:200],
                 body=tweet["text"],
